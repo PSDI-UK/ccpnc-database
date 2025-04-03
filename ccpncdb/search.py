@@ -17,6 +17,9 @@ def _formula_read(f):
             'n': n
         })
 
+    # Alphabetise the formula by species before searching
+    match = sorted(match, key=lambda x: x['species'])
+
     return match
 
 # Expressions for NMR quantities in aggregation queries
