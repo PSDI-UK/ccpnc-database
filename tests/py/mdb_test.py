@@ -250,10 +250,14 @@ class MagresDBTest(unittest.TestCase):
         # Add it twice
         rdata_1 = dict(_fake_rdata)
         rdata_1['chemname'] = 'ethanol'
+        rdata_1['formula'] = 'C2H6O'  # Unit cell formula
+        rdata_1['molecules'] = [{'species': 'C', 'n': 2}, {'species': 'H', 'n': 6}, {'species': 'O', 'n': 1}]
         res_1 = self.mdb.add_record(ethstr, rdata_1, _fake_vdata)
 
         rdata_2 = dict(_fake_rdata)
         rdata_2['chemname'] = 'ethyl alcohol'
+        rdata_2['formula'] = 'C2H6O'  # Unit cell formula
+        rdata_2['molecules'] = [{'species': 'C', 'n': 2}, {'species': 'H', 'n': 6}, {'species': 'O', 'n': 1}]
         res_2 = self.mdb.add_record(ethstr, rdata_2, _fake_vdata)
 
         rdata_3 = dict(_fake_rdata)
@@ -261,6 +265,8 @@ class MagresDBTest(unittest.TestCase):
         vdata_3 = dict(_fake_vdata)
         vdata_3['license'] = 'pddl'
         vdata_3['doi'] = '10.1010/ABCD123456'
+        rdata_2['formula'] = 'C3H7NO2'  # Unit cell formula
+        rdata_2['molecules'] = [{'species': 'C', 'n': 3}, {'species': 'H', 'n': 7}, {'species': 'N', 'n': 1}, {'species': 'O', 'n': 2}]
         res_3 = self.mdb.add_record(alastr, rdata_3, vdata_3)
 
         #Test search by chemname
@@ -414,7 +420,7 @@ class MagresDBTest(unittest.TestCase):
         self.assertEqual(len(found), 1)
         self.assertEqual(str(found[0]['_id']), res_2.id)
 
-        # Test by formula
+        # Test search by unit cell formula (alphabetised input)
         found = self.mdb.search_record([{
             'type': 'formula',
             'args': {'formula': 'C2H6O', 'subset': False},
@@ -423,6 +429,20 @@ class MagresDBTest(unittest.TestCase):
         found = list(found)
 
         self.assertEqual(len(found), 2)
+        self.assertEqual(str(found[0]['_id']), res_1.id)
+        self.assertEqual(str(found[1]['_id']), res_2.id)
+
+        # Test search by unit cell formula (non-alphabetised input)
+        found = self.mdb.search_record([{
+            'type': 'formula',
+            'args': {'formula': 'OH6C2', 'subset': False},
+            'negate_query': False
+        }])
+        found = list(found)
+
+        self.assertEqual(len(found), 2)
+        self.assertEqual(str(found[0]['_id']), res_1.id)
+        self.assertEqual(str(found[1]['_id']), res_2.id)
 
         # Try with subset
         found = self.mdb.search_record([{
@@ -433,6 +453,28 @@ class MagresDBTest(unittest.TestCase):
         found = list(found)
 
         self.assertEqual(len(found), 1)
+        self.assertEqual(str(found[0]['_id']), res_3.id)
+
+        # Test search by molecular formula (alphabetised input)
+        found = self.mdb.search_record([{
+            'type': 'molecule',
+            'args': {'formula': 'C2H6O'},
+            'negate_query': False}])
+        found = list(found)
+        self.assertEqual(len(found), 2)
+        self.assertEqual(str(found[0]['_id']), res_1.id)
+        self.assertEqual(str(found[1]['_id']), res_2.id)
+
+        # Test search by molecular formula (non-alphabetised input)
+        found = self.mdb.search_record([{
+            'type': 'molecule',
+            'args': {'formula': 'H6C2O'},
+            'negate_query': False
+        }])
+        found = list(found)
+        self.assertEqual(len(found), 2)
+        self.assertEqual(str(found[0]['_id']), res_1.id)
+        self.assertEqual(str(found[1]['_id']), res_2.id)
 
         # Now try obfuscating one
         self.mdb.edit_record(res_1.id, {'$set': {'visible': False}})
